@@ -1,0 +1,2112 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <script src="https://cdn.jsdelivr.net/npm/vue"></script>
+    <script src="https://cdn.bootcss.com/x2js/1.2.0/xml2json.js"></script>
+    <script src="js/jquery-1.11.0.min.js" type="text/javascript" charset="utf-8"></script>
+    <script type="text/javascript" src="js/xlsx.core.min.js"></script>
+    <script type="text/javascript" src="js/Blob.js"></script>
+    <script src="js/xlsx.full.min.js"></script>
+    <style>
+        body,html{
+            height:100%;
+        }
+        *{
+            margin:0;
+        }
+        #readfile{
+            background: url('https://cn.bing.com/az/hprichbg/rb/PragueChristmas_ZH-CN9765023795_1920x1080.jpg');
+            background-size: 100% 100%;
+            height: 100%;
+            position: relative;
+        }
+        .wrap{
+            height: 100%;
+            position: absolute;
+            top:0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(0,0,0,0.6);
+            text-align: center;
+        }
+        .step{
+            color:white;
+            margin-top: 20px;
+            font-size: 30px;
+        }
+        .tip{
+            color: white;
+            margin-top: 20px;
+            font-size: 20px;
+        }
+        .up_excel{
+            width: 100px;
+            height: 100px;
+            position: relative;
+            background-color: #f1f4f5;
+            text-align: center;
+            line-height: 90px;
+            display: inline-block;
+            border-radius: 50px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        .up_excel input{
+            display: inline-block;
+            width: 100px;
+            height: 100px;
+            opacity: 0;
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 10;
+            cursor: pointer;
+        }
+        .add1{
+            color: #e74c3c;
+            font-size: 80px;
+        }
+        .up_excel:hover{
+            background-color: #e74c3c;
+        }
+        .up_excel:hover .add1{
+            color: white;
+        }
+        .up_folder{
+            width: 100px;
+            height: 100px;
+            position: relative;
+            background-color: #f1f4f5;
+            text-align: center;
+            line-height: 90px;
+            display: inline-block;
+            border-radius: 50px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+        .up_folder input{
+            display: inline-block;
+            width: 100px;
+            height: 100px;
+            opacity: 0;
+            position: absolute;
+            left: 0;
+            top: 0;
+            z-index: 10;
+            cursor: pointer;
+        }
+        .add2{
+            color: #e74c3c;
+            font-size: 80px;
+        }
+        .up_folder:hover{
+            background-color: #e74c3c;
+        }
+        .up_folder:hover .add2{
+            color: white;
+        }
+        .btn{
+            width: 200px;
+            margin: 0 auto;
+            color:white;
+            background-color:#e74c3c ;
+            padding:10px 20px;
+            border-radius:5px;
+            margin-top:20px;
+            text-align: center;
+            cursor: pointer;
+        }
+        .btn:hover{
+            background-color: #c9392b;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="readfile">
+        <div class="wrap">
+            <div class="step">STEP1</div>
+            <div id="drop" class="tip">Select Four Excel(Feature、Getinspried、Accessory、Overview)</div>
+            <div class="up_excel"><span class="add1">+</span><input name="xlfile" id="xlf" type="file" @change="readFile" multiple="multiple"></div>
+            <div class="step">STEP2</div>
+            <div class="tip">Select the folder which you want to upload (folder:Input_Package)</div>
+            <div class="up_folder"><span class="add2">+</span><input type="file" id="ctrl" @change="readFile2" webkitdirectory directory multiple /></div>
+            <div class="btn" @click="btn1" title="导出Excel">导出Excel</div>
+        </div>
+    </div>
+    <script>
+        new Vue({
+            el: '#readfile',
+            data: {
+                wb:{},
+                get:{},
+                over:{},
+                arr:[],
+                name:[],
+                json:[],
+                path:[],
+                Acc:[],
+                Excel_content:[],
+                count:[],
+                Acc_name:[],
+                Acc_Asset:[],
+                Acc_Discription:[]
+            },
+            methods: {
+                readFile: function(obj) {
+                    // 读取将要写入数据的Excel文件
+                    for (var fileI = 0; fileI < obj.target.files.length; fileI++) {
+                        var file = obj.target.files[fileI];
+                        var reader = new FileReader();
+                        var this_ = this;
+                        reader.onload = function(ev) {
+                            var data = ev.target.result;
+                            var wb = XLSX.read(data, { type: "binary" });
+                            // console.log(wb)
+                            if(wb.SheetNames[0] == 'Output_Feature'){
+                                this_.wb = wb
+                            }else if(wb.SheetNames[0] == 'Output_GetInspired'){
+                                this_.get = wb
+                            }else if(wb.SheetNames[0] == 'Output_Overview'){
+                                this_.over = wb
+                            }else if(wb.SheetNames[0] == 'Output_Accessories'){
+                                this_.acce = wb
+                            }
+                        }
+                        reader.readAsBinaryString(file);
+                    }
+                },
+                readFile2:function(obj){
+                    // 读取文件夹的文件名存入到this.name中
+                    //用于Output_Feature/overview/Getinspried文件
+                    this.name = obj.target.files
+                    console.log(this.name)
+////////////////////////////////////////////////////////////////////////////////////////
+                    //用于Accessory文件
+                    // arr为获取的所有文件
+                    var arr = obj.target.files;
+                    //定义存文件的路径数组
+                    var webkitPath = []
+                    // 定义存文件名的数组
+                    var name = []
+                    // 定义获取所需文件的存储位置
+                    var IMG = []
+                    for(var i = 0;i < arr.length;i++){
+                        if(this.acce.Sheets.Output_Accessories[`D${i}`]){
+                            // this.path 存储 D所在一列的数据按读取数据的路径的形式拼成的路径
+                            this.path.push('Input_Package/Accessory/'+this.acce.Sheets.Output_Accessories[`D${i}`].v+'/')
+                        }
+                        // 判断 文件是否是在Accessory文件夹下
+                        if(arr[i].webkitRelativePath.slice(0,23) == 'Input_Package/Accessory'){
+                            //判断是否是xslx文件
+                            if(arr[i].type == 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'){
+                                // 读取的文件名有的会前面有~，但实际并不存在，所以过滤下
+                                if(arr[i].name.substr(0,1) == '~'){
+
+                                }else{
+                                    //this.Acc存储所有符合的文件
+                                    this.Acc.push(arr[i])
+                                    //存当前文件的路径
+                                    webkitPath.push(arr[i].webkitRelativePath)
+                                    //存当前文件的名字
+                                    name.push(arr[i].name)
+                                }
+                            }
+                        }
+                    }
+                    // console.log(this.Acc)
+                    // 循环所有D所在列拼成的路径
+                    for(var i = 0;i < this.path.length;i++){
+                        var brr = []
+                        // 若路径为'Input_Package/Accessory//',说明当前D的值为空
+                        if(this.path[i] == 'Input_Package/Accessory//'){
+                            brr.push('')
+                            //把空的数组存入IMG 
+                            IMG.push(brr)
+                        }else{
+                            // 循环存储的路径,与path匹配
+                            for(var j = 0;j < webkitPath.length;j++){
+                                var len = webkitPath[j].length - name[j].length;
+                                // console.log(webkitPath[j].substr(0,len))
+                                //webkitPath[j].substr(0,len)文件所在的路径除去名字
+                                if(webkitPath[j].substr(0,len) == this.path[i]){
+                                    //把路径符合的文件存入到数组中
+                                    brr.push(this.Acc[j])
+                                }
+                            }
+                            if(brr){
+                                // 把符合条件的数组存入到IMG
+                                IMG.push(brr)
+                            }
+                        }
+                    }
+                    // console.log(IMG)
+                    for(var i = 0;i<IMG.length;i++){
+                        var reader = new FileReader();
+                        // IMG 值为空时,不读取
+                        if(IMG[i][0] == '' || IMG[i][0] == undefined){
+                            
+                        }else{
+                            //IMG不为空时，读取当前文件
+                            var file = IMG[i][0]
+                            var this_ = this
+                            reader.onload = function(ev) {
+                                var data = ev.target.result;
+                                var wb = XLSX.read(data, { type: "binary" });
+                                // 把读取的数据存入到this_.Excel_content中
+                                this_.Excel_content.push(wb)
+                            }
+                            reader.readAsBinaryString(file);
+                        }
+                    }
+                },
+                btn1:function(){
+                    // 存储
+                    const saveAs = (obj, fileName)=>{
+                        const a = document.createElement('a');
+                        a.download = fileName || '下载';
+                        a.href = URL.createObjectURL(obj);     
+                        a.click();                           
+                        setTimeout(()=> {                     
+                        URL.revokeObjectURL(obj);     
+                        }, 100);
+                    };
+                    // 二进制转换
+                    const s2ab = s => {
+                        let buf = new ArrayBuffer(s.length);
+                        let view = new Uint8Array(buf);
+                        for (let i = 0; i !== s.length; ++i) view[i] = s.charCodeAt(i) & 0xFF;
+                        return buf;
+                    };
+                    // 边框样式
+                    const borderAll = {  //单元格外侧框线
+                        top: {
+                            style: 'thin'
+                        },
+                        bottom: {
+                            style: 'thin'
+                        },
+                        left: {
+                            style: 'thin'
+                        },
+                        right: {
+                            style: 'thin'
+                        }
+                    };
+                    const workbook = this.wb;
+                    const workbook2 = this.over;
+                    const workbook3 = this.get;
+
+/////////////////////////////////////Output_Feature/////////////////////////////////////////////////
+                    var path = []
+                    var webkitPath = []
+                    var name = []
+                    var IMG = []
+                    //循环文件名
+                    for(var i = 0;i < this.name.length;i++){
+                        var len1 = this.name[i].name.length;
+                        var len2 = this.name[i].webkitRelativePath.length
+                        if(workbook.Sheets.Output_Feature[`D${i}`]){
+                            //path 存储 D所在一列的数据按读取数据的路径的形式拼成的路径
+                            path.push('Input_Package/Feature/'+workbook.Sheets.Output_Feature[`D${i}`].v+'/')
+                        }
+                        if(this.name[i].webkitRelativePath.slice(0,22) == 'Input_Package/Feature/'){
+                            if(this.name[i].type == 'image/jpeg' || this.name[i].type == 'image/png'){
+                                webkitPath.push(this.name[i].webkitRelativePath)
+                                name.push(this.name[i].name)
+                            }
+                        }
+                    }
+                    // console.log(this.name[1846].type)
+                    // console.log(webkitPath[171])
+                    
+                    for(var i = 0;i < path.length;i++){
+                        var brr = []
+                        if(path[i] == 'Input_Package/Feature//'){
+                            brr.push('')
+                            IMG.push(brr)
+                        }else{
+                            for(var j = 0;j < webkitPath.length;j++){
+                                if(webkitPath[j].substr(0,path[i].length) == path[i]){
+                                    brr.push(name[j])
+                                    // console.log(brr)
+                                }
+                            }
+                            if(brr){
+                                IMG.push(brr)
+                            }
+                        }
+                    }
+                    // console.log(IMG[138].length)
+                    // Feature数据处理完毕
+                    // 定义四个空数组,用于存放表格中A~D现有的数据
+                    var a = []
+                    var b = []
+                    var c = []
+                    var d = []
+                    var arr = []
+                    for(var i = 5;i<10000;i++){
+                        //[`A${i}`]存在时,存入
+                        if(workbook.Sheets.Output_Feature[`A${i}`]){
+                            a.push(workbook.Sheets.Output_Feature[`A${i}`].v)
+                            if(workbook.Sheets.Output_Feature[`A${i}`].v != ''){
+                                arr.push(i)
+                            }
+                        }
+                        if(workbook.Sheets.Output_Feature[`B${i}`]){
+                            b.push(workbook.Sheets.Output_Feature[`B${i}`].v)
+                        }
+                        if(workbook.Sheets.Output_Feature[`C${i}`]){
+                            c.push(workbook.Sheets.Output_Feature[`C${i}`].v)
+                        }
+                        if(workbook.Sheets.Output_Feature[`D${i}`]){
+                            d.push(workbook.Sheets.Output_Feature[`D${i}`].v)
+                        }
+                    }
+                    // console.log(d)
+                    var brr = []
+                    for(var i = arr[arr.length -1]; i < 10000;i++){
+                        if(workbook.Sheets.Output_Feature[`B${i}`]){
+                            brr.push(workbook.Sheets.Output_Feature[`B${i}`].v)
+                        }
+                    }
+                    // 把E所在的一列的数据渲染
+                    var index = -1;
+                    var arr_ = []
+                    for(var i = 3;i<IMG.length;i++){
+                        var length_ = 0
+                        if(IMG[i].length == 0){
+                            length_ = 1
+                        }else{
+                            length_ = IMG[i].length
+                        }
+                        for(var j = 0;j < length_;j++){
+                            index += 1;
+                            if(IMG[i].length == 0){
+                                workbook.Sheets.Output_Feature[`E${4 + index}`] = push_json('NOT FOUND')
+                            }else{
+                                workbook.Sheets.Output_Feature[`E${4 + index}`] = push_json(IMG[i][j])
+                            }
+                            arr_.length += 1
+                        }
+                    }
+                    var length_ = arr_.length + 4
+
+                    var arr_count = []
+                    for(var i = 4;i < 10000;i++){
+                        if(workbook.Sheets.Output_Feature[`A${i}`]){
+                            if(workbook.Sheets.Output_Feature[`A${i}`].v != ''){
+                                arr_count.push(i)
+                            }
+                        }
+                    }
+                    // console.log(arr_count)
+                    var brr = []
+                    for(var i = 0; i < arr_count.length;i++){
+                        var val = arr_count[i]
+                        var len;
+                        var crr = []
+                        if(i+1 == arr_count.length){
+                            len = 10000
+                        }else{
+                            len = arr_count[i + 1]
+                        }
+                        for(var j = val;j < len;j++){
+                            if(workbook.Sheets.Output_Feature[`B${j}`]){
+                                crr.push(workbook.Sheets.Output_Feature[`B${j}`].v)
+                            }
+                        }
+                        brr.push(crr)
+                    }
+
+
+                    // 把当前表格除固定的数据全部清除
+                    for(var i = 5;i<length_;i++){
+                        workbook.Sheets.Output_Feature[`A${i}`] = push_json('')
+                        workbook.Sheets.Output_Feature[`B${i}`] = push_json('')
+                        workbook.Sheets.Output_Feature[`C${i}`] = push_json('')
+                        workbook.Sheets.Output_Feature[`D${i}`] = push_json('')
+                    }
+                    // 渲染 A~D
+                    var index = -1;
+                    var length1 = 0;
+                    var length2;
+                    var len;
+                    for(var i = 3;i<IMG.length;i++){
+                        if(IMG[i].length == 0){
+                            len = 0
+                            length1 += len
+                        }else {
+                            len = IMG[i].length - 1
+                            length1 += len
+                        }
+                        index += 1;
+                        if(a[index]){
+                            workbook.Sheets.Output_Feature[`A${5+length1+index}`] = push_json(a[index])
+                        }
+                        if(c[index]){
+                            workbook.Sheets.Output_Feature[`C${5+length1+index}`] = push_json(c[index])
+                        }
+                        if(d[index]){
+                            workbook.Sheets.Output_Feature[`D${5+length1+index}`] = push_json(d[index])
+                        }
+                    }
+                    var _arr = []
+                    for(var i = 4;i < 10000;i++){
+                        if(workbook.Sheets.Output_Feature[`A${i}`]){
+                            if(workbook.Sheets.Output_Feature[`A${i}`].v != ''){
+                                _arr.push(i)
+                            }
+                        }
+                    }
+                    // console.log(_arr)
+                    for(var i = 0;i < _arr.length;i++){
+                        for(var j = 0;j < brr[i].length;j++){
+                            workbook.Sheets.Output_Feature[`B${_arr[i] + j}`] = push_json(brr[i][j])
+                        }
+                    }
+                    function loop(){
+                        for(var i = 4;i < length_;i++){
+                            if(workbook.Sheets.Output_Feature[`A${i}`]){
+                                if(workbook.Sheets.Output_Feature[`A${i}`].v == ''  &&  workbook.Sheets.Output_Feature[`B${i}`].v == '' && workbook.Sheets.Output_Feature[`C${i}`].v == '' && workbook.Sheets.Output_Feature[`D${i}`].v == '' && workbook.Sheets.Output_Feature[`E${i}`].v == ''){
+                                    workbook.Sheets.Output_Feature[`A${i}`] = workbook.Sheets.Output_Feature[`A${i + 1}`]
+                                    workbook.Sheets.Output_Feature[`A${i + 1}`] = push_json('')
+                                    workbook.Sheets.Output_Feature[`B${i}`] = workbook.Sheets.Output_Feature[`B${i + 1}`]
+                                    workbook.Sheets.Output_Feature[`B${i + 1}`] = push_json('')
+                                    workbook.Sheets.Output_Feature[`C${i}`] = workbook.Sheets.Output_Feature[`C${i + 1}`]
+                                    workbook.Sheets.Output_Feature[`C${i + 1}`] = push_json('')
+                                    workbook.Sheets.Output_Feature[`D${i}`] = workbook.Sheets.Output_Feature[`D${i + 1}`]
+                                    workbook.Sheets.Output_Feature[`D${i + 1}`] = push_json('')
+                                    workbook.Sheets.Output_Feature[`E${i}`] = workbook.Sheets.Output_Feature[`E${i + 1}`]
+                                    workbook.Sheets.Output_Feature[`E${i + 1}`] = push_json('')
+                                }
+                            }
+                        }
+                    }
+                    loop()
+                    loop()
+                    loop()
+                    loop()
+                    loop()
+                    loop()
+                    for(var i = 4;i < 10000;i++){
+                        if(workbook.Sheets.Output_Feature[`A${i}`]){
+                            if(workbook.Sheets.Output_Feature[`A${i}`].v == ''  &&  workbook.Sheets.Output_Feature[`B${i}`].v == '' && workbook.Sheets.Output_Feature[`C${i}`].v == '' && workbook.Sheets.Output_Feature[`D${i}`].v == '' && workbook.Sheets.Output_Feature[`E${i}`].v == ''){
+                                workbook.Sheets.Output_Feature[`A${i}`] =  push_('')
+                                workbook.Sheets.Output_Feature[`B${i}`] =  push_('')
+                                workbook.Sheets.Output_Feature[`C${i}`] =  push_('')
+                                workbook.Sheets.Output_Feature[`D${i}`] =  push_('')
+                                workbook.Sheets.Output_Feature[`E${i}`] =  push_('')
+                            }
+                        }
+                    }
+                    // 以下是表格前几行固定的数据及样式
+                    workbook.Sheets.Output_Feature['!ref'] = 'A1:G10000'
+                    workbook.Sheets.Output_Feature['!merges'] = [{
+                        s: {c: 0, r: 0},
+                        e: {c: 8, r: 1}
+                    }]
+                    workbook.Sheets.Output_Feature['!cols'] = [{wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}]
+                    workbook.Sheets.Output_Feature.A1 =  {
+                        v: 'Output_Feature – Output Excel',
+                        t: 's',
+                        s: {
+                            font: {
+                                sz: 18
+                            },
+                            alignment: {
+                                horizontal: 'left'
+                            }
+                        }
+                    }
+                    workbook.Sheets.Output_Feature.A3 = {
+                        v: 'SMN',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook.Sheets.Output_Feature.B3 = {
+                        v: 'UMN',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook.Sheets.Output_Feature.C3 = {
+                        v: 'FactorID',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook.Sheets.Output_Feature.D3 = {
+                        v: 'DAM IDs (Manual)',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook.Sheets.Output_Feature.E3 = {
+                        v: 'Image File Names',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '98a91f'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook.Sheets.Output_Feature.F3 = {
+                        v: 'Image Asset ID ',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '0070c0'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook.Sheets.Output_Feature.G3 = {
+                        v: 'Output_Feature Object ID',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '0070c0'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    // console.log(workbook)
+                    const workbookOut = XLSX.write(workbook, {
+                        bookType: 'xlsx',
+                        bookSST: false,
+                        type: 'binary'
+                    });
+
+                    saveAs(new Blob([s2ab(workbookOut)], {
+                        type: 'application/octet-stream'
+                    }), 'Output_Feature.xlsx')
+
+
+
+////////////////////////////////Accessory//////////////////////////////////////////////////////////
+
+
+                    // 循环 在读取文件夹时生成的数据
+                    const workbook4 = this.acce;
+                    var path = []
+                    var webkitPath = []
+                    var name = []
+                    var IMG = []
+                    //循环文件名
+                    for(var i = 0;i < this.name.length;i++){
+                        if(workbook4.Sheets.Output_Accessories[`D${i}`]){
+                            //path 存储 D所在一列的数据按读取数据的路径的形式拼成的路径
+                            path.push('Input_Package/Accessory/'+workbook4.Sheets.Output_Accessories[`D${i}`].v+'/')
+                        }
+                        if(this.name[i].webkitRelativePath.slice(0,24) == 'Input_Package/Accessory/'){
+                            webkitPath.push(this.name[i].webkitRelativePath)
+                            name.push(this.name[i].name)
+                        }
+                    }
+                    // console.log(name)
+                    var box = []
+                    for(var i  = 0; i < path.length;i++){
+                        var arr = []
+                        for(var j = 0;j < webkitPath.length;j++){
+                            if(webkitPath[j].substr(0,path[i].length) == path[i]){
+                                arr.push(name[j])
+                            }
+                        }
+                        box.push(arr)
+                    }
+                    var wrap = []
+                    for(var i = 0;i < box.length;i++){
+                        if(box[i].length != 0){
+                            wrap.push(box[i])
+                        }
+                    } 
+                    for(var i = 0;i < wrap.length;i++){
+                        for(var j = 0;j < wrap[i].length;j++){
+                            var len1 = wrap[i][j].length
+                            var len2 = wrap[i][j].length - 4
+                            console.log(wrap[i][j].substr(len2,len1))
+                            if(wrap[i][j].substr(len2,len1) == 'xlsx'){
+                                wrap[i] = ['']
+                            }
+                        }
+                    }
+                    var wrap_ = []
+                    for(var i = 0;i < wrap.length;i++){
+                        var arr = []
+                        for(var j = 0;j < wrap[i].length;j++){
+                            var len1 = wrap[i][j].length
+                            var len2 = wrap[i][j].length - 3
+                            if(wrap[i][j].substr(len2,len1) == 'jpg' || wrap[i][j].substr(len2,len1) == 'png'){
+                                arr.push(wrap[i][j])
+                            }
+                        }
+                        wrap_.push(arr)
+                    }
+                    console.log(wrap_)
+                    for(var i = 0;i < this.Excel_content.length;i++){
+                        // 定义 存文件名、assetid、discription的数组
+                        var name_ = []
+                        var asset = []
+                        var discription = []
+                        // 定义当前的表格数据
+                        var wb = this.Excel_content[i]
+                        // 定义当前表哥的sheet名
+                        var q = this.Excel_content[i].SheetNames[0]
+                        //循环当前表格的数据
+                        for(var j = 3;j < 1000;j++){
+                            // 若存在
+                            if(wb.Sheets[q][`C${j}`]){
+                                // 把所需的内容存入到相应的数组中
+                                name_.push(wb.Sheets[q][`C${j}`].v)
+                                asset.push(wb.Sheets[q][`E${j}`].v)
+                                discription.push(wb.Sheets[q][`D${j}`].v)
+                            }
+                        }
+                        // 把获取的数组存入新的数组
+                        this.Acc_name.push(name_)
+                        this.Acc_Asset.push(asset)
+                        this.Acc_Discription.push(discription)
+                    }
+                    // console.log(this.Acc_name)
+                    var acc_name = []
+                    var acc_asset = []
+                    var acc_discripe = []
+                    for(var i = 0;i < this.Acc_name.length;i++){
+                        var arr = []
+                        var brr = []
+                        var crr = []
+                        for(var j = 0; j < this.Acc_name[i].length;j++){
+                            if(this.Acc_name[i][j] != ''){
+                                arr.push(this.Acc_name[i][j])
+                                brr.push(this.Acc_Asset[i][j])
+                                crr.push(this.Acc_Discription[i][j])
+                            }
+                        }
+                        acc_name.push(arr)
+                        acc_asset.push(brr)
+                        acc_discripe.push(crr)
+                    }
+                    // console.log(acc)
+                    var count = -1
+                    var acc_Asset_ = []
+                    var acc_discripe_ = []
+                    for(var i = 0;i < wrap_.length;i++){
+                        var ass = []
+                        var dis = []
+                        if(wrap_[i].length == 0){
+                            count += 1
+                            wrap_[i] = acc_name[count]
+                            for(var j = 0;j < acc_asset[count].length;j++){
+                                ass.push(acc_asset[count][j])
+                            }
+                            acc_Asset_.push(ass)
+                            for(var j = 0;j < acc_discripe[count].length;j++){
+                                dis.push(acc_discripe[count][j])
+                            }
+                            acc_discripe_.push(dis)
+                        }else{
+                            for(var j = 0;j < wrap_[i].length;j++){
+                                ass.push('')
+                                dis.push('')
+                            }
+                            acc_Asset_.push(ass)
+                            acc_discripe_.push(dis)
+                        }
+                    }
+                    // console.log(wrap_)
+                    this.Acc_name = wrap_
+                    this.Acc_Asset = acc_Asset_
+                    this.Acc_Discription = acc_discripe_
+                    console.log(this.Acc_name)
+                    console.log(this.Acc_Asset)
+                    // 定义一个数组存放Accessory表格D列的数据
+                    var d = []
+                    for(var i = 4;i < 10000;i++){
+                        if(workbook4.Sheets.Output_Accessories[`D${i}`]){
+                            if(workbook4.Sheets.Output_Accessories[`D${i}`].v != ''){
+                                d.push(workbook4.Sheets.Output_Accessories[`D${i}`].v)
+                            }else{
+                                d.push('')
+                            }
+                        }
+                    }
+                    // 循环D列的数据
+                    for(var i = 0;i < d.length;i++){
+                        // 当值为空时,在相应位置给一下数组添加一个空数组
+                        if(d[i] == ''){
+                            this.Acc_name.splice(i,0,['']);
+                            this.Acc_Asset.splice(i,0,['']);
+                            this.Acc_Discription.splice(i,0,['']);
+                        }
+                    }
+                    console.log(this.Acc_Asset)
+                    var index = -1;
+                    var length1 = 0;
+                    var length2;
+                    // 存A~D的值
+                    var a = []
+                    var b = []
+                    var c = []
+                    var d = []
+                    var len;
+                    var arr = []
+                    for(var i = 5;i<10000;i++){
+                        if(workbook4.Sheets.Output_Accessories[`A${i}`]){
+                            a.push(workbook4.Sheets.Output_Accessories[`A${i}`].v)
+                            if(workbook4.Sheets.Output_Accessories[`A${i}`].v != ''){
+                                arr.push('')
+                            }
+                        }
+                        if(workbook4.Sheets.Output_Accessories[`B${i}`]){
+                            b.push(workbook4.Sheets.Output_Accessories[`B${i}`].v)
+                        }
+                        if(workbook4.Sheets.Output_Accessories[`C${i}`]){
+                            c.push(workbook4.Sheets.Output_Accessories[`C${i}`].v)
+                        }
+                        if(workbook4.Sheets.Output_Accessories[`D${i}`]){
+                            d.push(workbook4.Sheets.Output_Accessories[`D${i}`].v)
+                        }
+                    }
+                    // 渲染E/G/J
+                    var index = -1;
+                    var arr_ = []
+                    for(var i = 0;i<this.Acc_name.length;i++){
+                        for(var j = 0;j < this.Acc_name[i].length;j++){
+                            index += 1;
+                            workbook4.Sheets.Output_Accessories[`E${4 + index}`] = push_json(this.Acc_name[i][j])
+                            workbook4.Sheets.Output_Accessories[`G${4 + index}`] = push_json(this.Acc_Asset[i][j])
+                            workbook4.Sheets.Output_Accessories[`J${4 + index}`] = push_json(this.Acc_Discription[i][j])
+                            arr_.length += 1
+                        }
+                    }
+                    var arr_count = []
+                    for(var i = 4;i < 10000;i++){
+                        if(workbook4.Sheets.Output_Accessories[`A${i}`]){
+                            if(workbook4.Sheets.Output_Accessories[`A${i}`].v != ''){
+                                arr_count.push(i)
+                            }
+                        }
+                    }
+                    var brr = []
+                    for(var i = 0; i < arr_count.length;i++){
+                        var val = arr_count[i]
+                        var len;
+                        var crr = []
+                        if(i+1 == arr_count.length){
+                            len = 10000
+                        }else{
+                            len = arr_count[i + 1]
+                        }
+                        for(var j = val;j < len;j++){
+                            if(workbook4.Sheets.Output_Accessories[`B${j}`]){
+                                crr.push(workbook4.Sheets.Output_Accessories[`B${j}`].v)
+                            }
+                        }
+                        brr.push(crr)
+                    }
+
+                    // 清空A~D
+                    var length_ = arr_.length + 4
+                    for(var i = 5;i<length_;i++){
+                        workbook4.Sheets.Output_Accessories[`A${i}`] = push_json('')
+                        workbook4.Sheets.Output_Accessories[`B${i}`] = push_json('')
+                        workbook4.Sheets.Output_Accessories[`C${i}`] = push_json('')
+                        workbook4.Sheets.Output_Accessories[`D${i}`] = push_json('')
+                    }
+                    //渲染A~D
+                    var index = -1;
+                    var length1 = 0;
+                    var length2;
+                    var len;
+                    for(var i = 0;i<this.Acc_name.length;i++){
+                        if(this.Acc_name[i].length == 0 || this.Acc_name[i].length == 1){
+                            len = 0
+                            length1 += len
+                        }else {
+                            len = this.Acc_name[i].length -1
+                            length1 += len
+                        }
+                        index += 1;
+                        if(a[index]){
+                            workbook4.Sheets.Output_Accessories[`A${5+length1+index}`] = push_json(a[index])
+                        }
+                        if(c[index]){
+                            workbook4.Sheets.Output_Accessories[`C${5+length1+index}`] = push_json(c[index])
+                        }
+                        if(d[index]){
+                            workbook4.Sheets.Output_Accessories[`D${5+length1+index}`] = push_json(d[index])
+                        }
+                    }
+                    var _arr = []
+                    for(var i = 4;i < 10000;i++){
+                        if(workbook4.Sheets.Output_Accessories[`A${i}`]){
+                            if(workbook4.Sheets.Output_Accessories[`A${i}`].v != ''){
+                                _arr.push(i)
+                            }
+                        }
+                    }
+                    // console.log(_arr)
+                    for(var i = 0;i < _arr.length;i++){
+                        for(var j = 0;j < brr[i].length;j++){
+                            workbook4.Sheets.Output_Accessories[`B${_arr[i] + j}`] = push_json(brr[i][j])
+                        }
+                    }
+                    
+                    function loop4(){
+                        for(var i = 4;i < length_;i++){
+                            if(workbook4.Sheets.Output_Accessories[`A${i}`]){
+                                if(workbook4.Sheets.Output_Accessories[`A${i}`].v == ''  &&  workbook4.Sheets.Output_Accessories[`B${i}`].v == '' && workbook4.Sheets.Output_Accessories[`C${i}`].v == '' && workbook4.Sheets.Output_Accessories[`D${i}`].v == '' && workbook4.Sheets.Output_Accessories[`E${i}`].v == ''){
+                                    workbook4.Sheets.Output_Accessories[`A${i}`] = workbook4.Sheets.Output_Accessories[`A${i + 1}`]
+                                    workbook4.Sheets.Output_Accessories[`A${i + 1}`] = push_json('')
+                                    workbook4.Sheets.Output_Accessories[`B${i}`] = workbook4.Sheets.Output_Accessories[`B${i + 1}`]
+                                    workbook4.Sheets.Output_Accessories[`B${i + 1}`] = push_json('')
+                                    workbook4.Sheets.Output_Accessories[`C${i}`] = workbook4.Sheets.Output_Accessories[`C${i + 1}`]
+                                    workbook4.Sheets.Output_Accessories[`C${i + 1}`] = push_json('')
+                                    workbook4.Sheets.Output_Accessories[`D${i}`] = workbook4.Sheets.Output_Accessories[`D${i + 1}`]
+                                    workbook4.Sheets.Output_Accessories[`D${i + 1}`] = push_json('')
+                                    workbook4.Sheets.Output_Accessories[`E${i}`] = workbook4.Sheets.Output_Accessories[`E${i + 1}`]
+                                    workbook4.Sheets.Output_Accessories[`E${i + 1}`] = push_json('')
+                                    workbook4.Sheets.Output_Accessories[`G${i}`] = workbook4.Sheets.Output_Accessories[`G${i + 1}`]
+                                    workbook4.Sheets.Output_Accessories[`G${i + 1}`] = push_json('')
+                                    workbook4.Sheets.Output_Accessories[`J${i}`] = workbook4.Sheets.Output_Accessories[`J${i + 1}`]
+                                    workbook4.Sheets.Output_Accessories[`J${i + 1}`] = push_json('')
+                                }
+                            }
+                        }
+                    }
+                    loop4()
+                    loop4()
+                    loop4()
+                    loop4()
+                    loop4()
+                    loop4()
+                    for(var i = 4;i < 10000;i++){
+                        if(workbook4.Sheets.Output_Accessories[`A${i}`]){
+                            if(workbook4.Sheets.Output_Accessories[`A${i}`].v == ''  &&  workbook4.Sheets.Output_Accessories[`B${i}`].v == '' && workbook4.Sheets.Output_Accessories[`C${i}`].v == '' && workbook4.Sheets.Output_Accessories[`D${i}`].v == '' && workbook4.Sheets.Output_Accessories[`E${i}`].v == ''){
+                                workbook4.Sheets.Output_Accessories[`A${i}`] =  push_('')
+                                workbook4.Sheets.Output_Accessories[`B${i}`] =  push_('')
+                                workbook4.Sheets.Output_Accessories[`C${i}`] =  push_('')
+                                workbook4.Sheets.Output_Accessories[`D${i}`] =  push_('')
+                                workbook4.Sheets.Output_Accessories[`E${i}`] =  push_('')
+                                workbook4.Sheets.Output_Accessories[`G${i}`] =  push_('')
+                                workbook4.Sheets.Output_Accessories[`J${i}`] =  push_('')
+                            }
+                        }
+                    }
+                    workbook4.Sheets.Output_Accessories['!ref'] = 'A1:J10000'
+                    workbook4.Sheets.Output_Accessories['!merges'] = [{
+                        s: {c: 0, r: 0},
+                        e: {c: 9, r: 0}
+                    }]
+                    workbook4.Sheets.Output_Accessories['!cols'] = [ {wpx: 185},{wpx: 185}, {wpx: 185},{wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}]
+                    workbook4.Sheets.Output_Accessories.A1 = {
+                        v: 'Output_Accessories – Tabbed – Output Excel',
+                        t: 's',
+                        s: {
+                            font: {
+                                sz: 18
+                            },
+                            alignment: {
+                                horizontal: 'left'
+                            }
+                        }
+                    }
+                    workbook4.Sheets.Output_Accessories.A3 = {
+                        v: 'SMN',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                    rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook4.Sheets.Output_Accessories.B3 = {
+                        v: 'UMN',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                    rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook4.Sheets.Output_Accessories.C3 = {
+                        v: 'Output_Accessories',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                    rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook4.Sheets.Output_Accessories.D3 = {
+                        v: 'DAM IDs',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                    rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook4.Sheets.Output_Accessories.E3 = {
+                        v: 'Image File Names',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                    rgb: '98a91f'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook4.Sheets.Output_Accessories.F3 = {
+                        v: 'Newly Creation?',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                    rgb: '0070c0'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook4.Sheets.Output_Accessories.G3 = {
+                        v: 'Image Asset ID ',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                    rgb: '0070c0'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook4.Sheets.Output_Accessories.H3 = {
+                        v: 'UMN Names',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                    rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook4.Sheets.Output_Accessories.I3 = {
+                        v: 'Feature Object ID',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                    rgb: '0070c0'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook4.Sheets.Output_Accessories.J3 = {
+                        v: 'Description',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                    rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    const workbook4Out = XLSX.write(workbook4, {
+                        bookType: 'xlsx',
+                        bookSST: false,
+                        type: 'binary'
+                    });
+                    saveAs(new Blob([s2ab(workbook4Out)], {
+                        type: 'application/octet-stream'
+                    }), 'Output_Output_Accessories.xlsx')
+
+
+
+
+//////////////////////////////////overview/////////////////////////////////////////////////
+
+                    // overview同Feature
+                    var path = []
+                    var webkitPath = []
+                    var name = []
+                    var IMG = []
+                    for(var i = 0;i < this.name.length;i++){
+                        var len1 = this.name[i].name.length;
+                        var len2 = this.name[i].webkitRelativePath.length
+                        var box = []
+                        if(workbook2.Sheets.Output_Overview[`D${i}`]){
+                            path.push('Input_Package/Overview_Gallery/'+workbook2.Sheets.Output_Overview[`D${i}`].v+'/')
+                        }
+                        if(this.name[i].webkitRelativePath.slice(0,31) == 'Input_Package/Overview_Gallery/'){
+                            //  console.log(this.name[i].type)
+                            if(this.name[i].type == 'image/jpeg' || this.name[i].type == 'image/png'){
+                                webkitPath.push(this.name[i].webkitRelativePath)
+                                name.push(this.name[i].name)
+                            }
+                        }
+                    }
+                    // console.log(this.name[1].type)
+                    for(var i = 0;i < path.length;i++){
+                        var brr = []
+                        if(path[i] == 'Input_Package/Overview_Gallery//'){
+                            brr.push('')
+                            IMG.push(brr)
+                        }else{
+                            for(var j = 0;j < webkitPath.length;j++){
+                                if(webkitPath[j].substr(0,path[i].length) == path[i]){
+                                    brr.push(name[j])
+                                    // console.log(name[j])
+                                }
+                            }
+                            if(brr){
+                                IMG.push(brr)
+                            }
+                        }
+                    }
+                    // console.log(IMG)
+                    // console.log(webkitPath)
+                    var a = []
+                    var b = []
+                    var c = []
+                    var d = []
+                    var arr = [];
+                    for(var i = 5;i<10000;i++){
+                        if(workbook2.Sheets.Output_Overview[`A${i}`]){
+                            a.push(workbook2.Sheets.Output_Overview[`A${i}`].v);
+                            if(workbook2.Sheets.Output_Overview[`A${i}`].v != ''){
+                                arr.push(i)
+                            }
+                        }
+                        if(workbook2.Sheets.Output_Overview[`B${i}`]){
+                            b.push(workbook2.Sheets.Output_Overview[`B${i}`].v)
+                        }
+                        if(workbook2.Sheets.Output_Overview[`C${i}`]){
+                            c.push(workbook2.Sheets.Output_Overview[`C${i}`].v)
+                        }
+                        if(workbook2.Sheets.Output_Overview[`D${i}`]){
+                            d.push(workbook2.Sheets.Output_Overview[`D${i}`].v)
+                        }
+                    }
+                    // console.log(a)
+                    var brr = [];
+                    // console.log(arr[arr.length -1])
+                    for(var i = arr[arr.length -1]; i < 10000;i++){
+                        if(workbook2.Sheets.Output_Overview[`B${i}`]){
+                            brr.push(workbook2.Sheets.Output_Overview[`B${i}`].v)
+                        }
+                    }
+                    // console.log(brr)
+                    
+                    var index = -1;
+                    var arr_ = []
+                    for(var i = 3;i<IMG.length;i++){
+                        var length_ = 0
+                        if(IMG[i].length == 0){
+                            length_ = 1
+                        }else{
+                            length_ = IMG[i].length
+                        }
+                        for(var j = 0;j < length_;j++){
+                            index += 1;
+                            if(IMG[i].length == 0){
+                                workbook2.Sheets.Output_Overview[`F${4 + index}`] = push_json('NOT FOUND')
+                                arr_.length += 1
+                            }else{
+                                workbook2.Sheets.Output_Overview[`F${4 + index}`] = push_json(IMG[i][j])
+                                arr_.length += 1
+                            }
+                        }
+                    }
+                    // console.log(IMG)
+                    // for(var i = 3;i<IMG.length;i++){
+                    //     for(var j = 0;j < IMG[i].length;j++){
+                    //         index += 1;
+                    //         workbook2.Sheets.Output_Overview[`F${5 + index}`] = push_json(IMG[i][j])
+                    //         arr_.length += 1
+                    //     }
+                    // }
+                    // console.log(arr_.length)
+                    var length_ = arr_.length + brr.length - 1
+
+                    var arr_count = []
+                    for(var i = 4;i < 10000;i++){
+                        if(workbook2.Sheets.Output_Overview[`A${i}`]){
+                            if(workbook2.Sheets.Output_Overview[`A${i}`].v != ''){
+                                arr_count.push(i)
+                            }
+                        }
+                    }
+                    // console.log(arr_count)
+                    var brr = []
+                    for(var i = 0; i < arr_count.length;i++){
+                        var val = arr_count[i]
+                        var len;
+                        var crr = []
+                        if(i+1 == arr_count.length){
+                            len = 10000
+                        }else{
+                            len = arr_count[i + 1]
+                        }
+                        for(var j = val;j < len;j++){
+                            if(workbook2.Sheets.Output_Overview[`B${j}`]){
+                                crr.push(workbook2.Sheets.Output_Overview[`B${j}`].v)
+                            }
+                        }
+                        brr.push(crr)
+                    }
+                    // console.log(length_)
+                    for(var i = 5;i<length_;i++){
+                        workbook2.Sheets.Output_Overview[`A${i}`] = push_json('')
+                        workbook2.Sheets.Output_Overview[`B${i}`] = push_json('')
+                        workbook2.Sheets.Output_Overview[`C${i}`] = push_json('')
+                        workbook2.Sheets.Output_Overview[`D${i}`] = push_json('')
+                        workbook2.Sheets.Output_Overview[`E${i}`] = push_json('')
+                        workbook2.Sheets.Output_Overview[`G${i}`] = push_json('')
+                        workbook2.Sheets.Output_Overview[`H${i}`] = push_json('')
+                        workbook2.Sheets.Output_Overview[`I${i}`] = push_json('')
+                        workbook2.Sheets.Output_Overview[`J${i}`] = push_json('')
+                    }
+                    var index = -1;
+                    var length1 = 0;
+                    var length2;
+                    var len;
+                    for(var i = 3;i<IMG.length;i++){
+                        if(IMG[i].length == 0 || IMG[i].length == 1){
+                            len = 0
+                            length1 += len
+                        }else {
+                            len = IMG[i].length - 1
+                            length1 += len
+                        }
+                        index += 1;
+                        if(a[index]){
+                            workbook2.Sheets.Output_Overview[`A${5+length1+index}`] = push_json(a[index])
+                        }
+                        if(c[index]){
+                            workbook2.Sheets.Output_Overview[`C${5+length1+index}`] = push_json(c[index])
+                        }
+                        if(d[index]){
+                            workbook2.Sheets.Output_Overview[`D${5+length1+index}`] = push_json(d[index])
+                        }
+                    }
+                    var _arr = []
+                    for(var i = 4;i < 10000;i++){
+                        if(workbook2.Sheets.Output_Overview[`A${i}`]){
+                            if(workbook2.Sheets.Output_Overview[`A${i}`].v != ''){
+                                _arr.push(i)
+                            }
+                        }
+                    }
+                    // console.log(_arr)
+                    for(var i = 0;i < _arr.length;i++){
+                        for(var j = 0;j < brr[i].length;j++){
+                            workbook2.Sheets.Output_Overview[`B${_arr[i] + j}`] = push_json(brr[i][j])
+                        }
+                    }
+                    function loop2(){
+                        for(var i = 4;i < length_;i++){
+                            if(workbook2.Sheets.Output_Overview[`A${i}`]){
+                                if(workbook2.Sheets.Output_Overview[`A${i}`].v == ''  &&  workbook2.Sheets.Output_Overview[`B${i}`].v == '' && workbook2.Sheets.Output_Overview[`C${i}`].v == '' && workbook2.Sheets.Output_Overview[`D${i}`].v == '' && workbook2.Sheets.Output_Overview[`E${i}`].v == '' && workbook2.Sheets.Output_Overview[`F${i}`].v == ''){
+                                    // console.log(i)
+                                    workbook2.Sheets.Output_Overview[`A${i}`] = workbook2.Sheets.Output_Overview[`A${i + 1}`]
+                                    workbook2.Sheets.Output_Overview[`A${i + 1}`] = push_json('')
+                                    workbook2.Sheets.Output_Overview[`B${i}`] = workbook2.Sheets.Output_Overview[`B${i + 1}`]
+                                    workbook2.Sheets.Output_Overview[`B${i + 1}`] = push_json('')
+                                    workbook2.Sheets.Output_Overview[`C${i}`] = workbook2.Sheets.Output_Overview[`C${i + 1}`]
+                                    workbook2.Sheets.Output_Overview[`C${i + 1}`] = push_json('')
+                                    workbook2.Sheets.Output_Overview[`D${i}`] = workbook2.Sheets.Output_Overview[`D${i + 1}`]
+                                    workbook2.Sheets.Output_Overview[`D${i + 1}`] = push_json('')
+                                    workbook2.Sheets.Output_Overview[`E${i}`] = workbook2.Sheets.Output_Overview[`E${i + 1}`]
+                                    workbook2.Sheets.Output_Overview[`E${i + 1}`] = push_json('')
+                                    workbook2.Sheets.Output_Overview[`F${i}`] = workbook2.Sheets.Output_Overview[`F${i + 1}`]
+                                    workbook2.Sheets.Output_Overview[`F${i + 1}`] = push_json('')
+                                }
+                            }
+                        }
+                    }
+                    // loop2()
+                    // loop2()
+                    // loop2()
+                    // for(var i = 4;i < 10000;i++){
+                    //     if(workbook2.Sheets.Output_Overview[`A${i}`]){
+                    //         if(workbook2.Sheets.Output_Overview[`A${i}`].v == ''  &&  workbook2.Sheets.Output_Overview[`B${i}`].v == '' && workbook2.Sheets.Output_Overview[`C${i}`].v == '' && workbook2.Sheets.Output_Overview[`D${i}`].v == '' && workbook2.Sheets.Output_Overview[`E${i}`].v == '' && workbook2.Sheets.Output_Overview[`F${i}`].v == ''){
+                    //             // console.log(i)
+                    //             workbook2.Sheets.Output_Overview[`A${i}`] =  push_('')
+                    //             workbook2.Sheets.Output_Overview[`B${i}`] =  push_('')
+                    //             workbook2.Sheets.Output_Overview[`C${i}`] =  push_('')
+                    //             workbook2.Sheets.Output_Overview[`D${i}`] =  push_('')
+                    //             workbook2.Sheets.Output_Overview[`E${i}`] =  push_('')
+                    //             workbook2.Sheets.Output_Overview[`F${i}`] =  push_('')
+                    //         }
+                    //     }
+                    // }
+                    workbook2.Sheets.Output_Overview['!ref'] = 'A1:J10000'
+                    workbook2.Sheets.Output_Overview['!merges'] = [{
+                        s: {c: 0, r: 0},
+                        e: {c: 9, r: 1}
+                    }]
+                    workbook2.Sheets.Output_Overview['!cols'] = [{wpx: 185}, {wpx: 185}, {wpx: 185},{wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}]
+                    workbook2.Sheets.Output_Overview.A1 =  {
+                        v: 'Output_Overview– Output Excel',
+                        t: 's',
+                        s: {
+                            font: {
+                                sz: 18
+                            },
+                            alignment: {
+                                horizontal: 'left'
+                            }
+                        }
+                    }
+                    workbook2.Sheets.Output_Overview.A3 = {
+                        v: 'SMN',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook2.Sheets.Output_Overview.B3 = {
+                        v: 'UMN',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook2.Sheets.Output_Overview.C3 = {
+                        v: 'Display Model Number',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook2.Sheets.Output_Overview.D3 = {
+                        v: 'DAM IDs (Manual)',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook2.Sheets.Output_Overview.E3 = {
+                        v: 'HMX ID',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '98a91f'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook2.Sheets.Output_Overview.F3 = {
+                        v: 'Image File Names',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '98a91f'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook2.Sheets.Output_Overview.G3 = {
+                        v: 'Video URL',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '98a91f'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook2.Sheets.Output_Overview.H3 = {
+                        v: 'Image Asset ID',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '0070c0'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook2.Sheets.Output_Overview.I3 = {
+                        v: 'Video Asset ID',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '0070c0'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook2.Sheets.Output_Overview.J3 = {
+                        v: 'HTML File Asset ID',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '0070c0'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    // console.log(workbook2)
+                    const workbook2Out = XLSX.write(workbook2, {
+                        bookType: 'xlsx',
+                        bookSST: false,
+                        type: 'binary'
+                    });
+
+                    saveAs(new Blob([s2ab(workbook2Out)], {
+                        type: 'application/octet-stream'
+                    }), 'Output_Output_Overview.xlsx')
+
+
+
+/////////////////////////////////////////////Get_Inspired///////////////////////////////////////////
+
+
+                    //Get_Inspired同Feature
+                    var path = []
+                    var webkitPath = []
+                    var name = []
+                    var IMG = []
+                    for(var i = 0;i < this.name.length;i++){
+                        var len1 = this.name[i].name.length;
+                        var len2 = this.name[i].webkitRelativePath.length
+                        if(workbook3.Sheets.Output_GetInspired[`D${i}`]){
+                            path.push('Input_Package/Get Inspired/'+workbook3.Sheets.Output_GetInspired[`D${i}`].v+'/')
+                        }
+                        if(this.name[i].webkitRelativePath.slice(0,27) == 'Input_Package/Get Inspired/'){
+                            if(this.name[i].type == 'image/jpeg' || this.name[i].type == 'image/png'){
+                                webkitPath.push(this.name[i].webkitRelativePath)
+                                name.push(this.name[i].name)
+                            }
+                        }
+                      
+                    }
+                    // console.log(name)
+                    for(var i = 0;i < path.length;i++){
+                        var brr = []
+                        if(path[i] == 'Input_Package/Get Inspired//'){
+                            brr.push('')
+                            IMG.push(brr)
+                        }else{
+                            for(var j = 0;j < webkitPath.length;j++){
+                                var len = webkitPath[j].length - name[j].length
+                                if(webkitPath[j].substr(0,path[i].length) == path[i]){
+                                    brr.push(name[j])
+                                    // console.log(brr)
+                                }
+                            }
+                            if(brr){
+                                IMG.push(brr)
+                            }
+                        }
+                    }
+                    var a = []
+                    var b = []
+                    var c = []
+                    var d = []
+                    var arr = []
+                    for(var i = 5;i<10000;i++){
+                        if(workbook3.Sheets.Output_GetInspired[`A${i}`]){
+                            a.push(workbook3.Sheets.Output_GetInspired[`A${i}`].v)
+                            if(workbook3.Sheets.Output_GetInspired[`A${i}`].v != ''){
+                                arr.push(i)
+                            }
+                        }
+                        if(workbook3.Sheets.Output_GetInspired[`B${i}`]){
+                            b.push(workbook3.Sheets.Output_GetInspired[`B${i}`].v)
+                        }
+                        if(workbook3.Sheets.Output_GetInspired[`C${i}`]){
+                            c.push(workbook3.Sheets.Output_GetInspired[`C${i}`].v)
+                        }
+                        if(workbook3.Sheets.Output_GetInspired[`D${i}`]){
+                            d.push(workbook3.Sheets.Output_GetInspired[`D${i}`].v)
+                        }
+                    }
+                    var brr = [];
+                    for(var i = arr[arr.length -1]; i < 10000;i++){
+                        if(workbook3.Sheets.Output_GetInspired[`B${i}`]){
+                            brr.push(workbook3.Sheets.Output_GetInspired[`B${i}`].v)
+                        }
+                    }
+                    var index = -1;
+                    var arr_ = []
+                    for(var i = 3;i<IMG.length;i++){
+                        var length_ = 0
+                        if(IMG[i].length == 0){
+                            length_ = 1
+                        }else{
+                            length_ = IMG[i].length
+                        }
+                        for(var j = 0;j < length_;j++){
+                            index += 1;
+                            if(IMG[i].length == 0){
+                                workbook3.Sheets.Output_GetInspired[`F${4 + index}`] = push_json('NOT FOUND')
+                                arr_.length += 1
+                            }else{
+                                workbook3.Sheets.Output_GetInspired[`F${4 + index}`] = push_json(IMG[i][j])
+                                arr_.length += 1
+                            }
+                        }
+                    }
+                    var length_ = arr_.length + brr.length +1
+
+                    var arr_count = []
+                    for(var i = 4;i < 10000;i++){
+                        if(workbook3.Sheets.Output_GetInspired[`A${i}`]){
+                            if(workbook3.Sheets.Output_GetInspired[`A${i}`].v != ''){
+                                arr_count.push(i)
+                            }
+                        }
+                    }
+                    var brr = []
+                    for(var i = 0; i < arr_count.length;i++){
+                        var val = arr_count[i]
+                        var len;
+                        var crr = []
+                        if(i+1 == arr_count.length){
+                            len = 10000
+                        }else{
+                            len = arr_count[i + 1]
+                        }
+                        for(var j = val;j < len;j++){
+                            if(workbook3.Sheets.Output_GetInspired[`B${j}`]){
+                                crr.push(workbook3.Sheets.Output_GetInspired[`B${j}`].v)
+                            }
+                        }
+                        brr.push(crr)
+                    }
+                    for(var i = 5;i<length_;i++){
+                        workbook3.Sheets.Output_GetInspired[`A${i}`] = push_json('')
+                        workbook3.Sheets.Output_GetInspired[`B${i}`] = push_json('')
+                        workbook3.Sheets.Output_GetInspired[`C${i}`] = push_json('')
+                        workbook3.Sheets.Output_GetInspired[`D${i}`] = push_json('')
+                        workbook3.Sheets.Output_GetInspired[`E${i}`] = push_json('')
+                    }
+                    var index = -1;
+                    var length1 = 0;
+                    var length2;
+                    var len;
+                    for(var i = 3;i<IMG.length;i++){
+                        if(IMG[i].length == 0 || IMG[i].length == 1){
+                            len = 0
+                            length1 += len
+                        }else {
+                            len = IMG[i].length - 1
+                            length1 += len
+                        }
+                        index += 1;
+                        if(a[index]){
+                            workbook3.Sheets.Output_GetInspired[`A${5+length1+index}`] = push_json(a[index])
+                        }
+                        if(c[index]){
+                            workbook3.Sheets.Output_GetInspired[`C${5+length1+index}`] = push_json(c[index])
+                        }
+                        if(d[index]){
+                            workbook3.Sheets.Output_GetInspired[`D${5+length1+index}`] = push_json(d[index])
+                        }
+                    }
+                    var _arr = []
+                    for(var i = 4;i < 10000;i++){
+                        if(workbook3.Sheets.Output_GetInspired[`A${i}`]){
+                            if(workbook3.Sheets.Output_GetInspired[`A${i}`].v != ''){
+                                _arr.push(i)
+                            }
+                        }
+                    }
+                    for(var i = 0;i < _arr.length;i++){
+                        for(var j = 0;j < brr[i].length;j++){
+                            workbook3.Sheets.Output_GetInspired[`B${_arr[i] + j}`] = push_json(brr[i][j])
+                        }
+                    }
+                    function loop3(){
+                        for(var i = 4;i < length_;i++){
+                            if(workbook3.Sheets.Output_GetInspired[`A${i}`]  &&  workbook3.Sheets.Output_GetInspired[`B${i}`] && workbook3.Sheets.Output_GetInspired[`C${i}`] && workbook3.Sheets.Output_GetInspired[`D${i}`] && workbook3.Sheets.Output_GetInspired[`E${i}`] && workbook3.Sheets.Output_GetInspired[`F${i}`]){
+                                if(workbook3.Sheets.Output_GetInspired[`A${i}`].v == ''  &&  workbook3.Sheets.Output_GetInspired[`B${i}`].v == '' && workbook3.Sheets.Output_GetInspired[`C${i}`].v == '' && workbook3.Sheets.Output_GetInspired[`D${i}`].v == '' && workbook3.Sheets.Output_GetInspired[`E${i}`].v == '' && workbook3.Sheets.Output_GetInspired[`F${i}`].v == ''){
+                                    // console.log(i)
+                                    workbook3.Sheets.Output_GetInspired[`A${i}`] = workbook3.Sheets.Output_GetInspired[`A${i + 1}`]
+                                    workbook3.Sheets.Output_GetInspired[`A${i + 1}`] = push_json('')
+                                    workbook3.Sheets.Output_GetInspired[`B${i}`] = workbook3.Sheets.Output_GetInspired[`B${i + 1}`]
+                                    workbook3.Sheets.Output_GetInspired[`B${i + 1}`] = push_json('')
+                                    workbook3.Sheets.Output_GetInspired[`C${i}`] = workbook3.Sheets.Output_GetInspired[`C${i + 1}`]
+                                    workbook3.Sheets.Output_GetInspired[`C${i + 1}`] = push_json('')
+                                    workbook3.Sheets.Output_GetInspired[`D${i}`] = workbook3.Sheets.Output_GetInspired[`D${i + 1}`]
+                                    workbook3.Sheets.Output_GetInspired[`D${i + 1}`] = push_json('')
+                                    workbook3.Sheets.Output_GetInspired[`E${i}`] = workbook3.Sheets.Output_GetInspired[`E${i + 1}`]
+                                    workbook3.Sheets.Output_GetInspired[`E${i + 1}`] = push_json('')
+                                    workbook3.Sheets.Output_GetInspired[`F${i}`] = workbook3.Sheets.Output_GetInspired[`F${i + 1}`]
+                                    workbook3.Sheets.Output_GetInspired[`F${i + 1}`] = push_json('')
+                                }
+                            }
+                        }
+                    }
+                    loop3()
+                    loop3()
+                    loop3()
+                    loop3()
+                    loop3()
+                    loop3()
+                    loop3()
+                    for(var i = 4;i < 10000;i++){
+                        if(workbook3.Sheets.Output_GetInspired[`A${i}`]  &&  workbook3.Sheets.Output_GetInspired[`B${i}`] && workbook3.Sheets.Output_GetInspired[`C${i}`] && workbook3.Sheets.Output_GetInspired[`D${i}`] && workbook3.Sheets.Output_GetInspired[`E${i}`] && workbook3.Sheets.Output_GetInspired[`F${i}`]){
+                            if(workbook3.Sheets.Output_GetInspired[`A${i}`].v == ''  &&  workbook3.Sheets.Output_GetInspired[`B${i}`].v == '' && workbook3.Sheets.Output_GetInspired[`C${i}`].v == '' && workbook3.Sheets.Output_GetInspired[`D${i}`].v == '' && workbook3.Sheets.Output_GetInspired[`E${i}`].v == '' && workbook3.Sheets.Output_GetInspired[`F${i}`].v == ''){
+                                // console.log(i)
+                                workbook3.Sheets.Output_GetInspired[`A${i}`] =  push_('')
+                                workbook3.Sheets.Output_GetInspired[`B${i}`] =  push_('')
+                                workbook3.Sheets.Output_GetInspired[`C${i}`] =  push_('')
+                                workbook3.Sheets.Output_GetInspired[`D${i}`] =  push_('')
+                                workbook3.Sheets.Output_GetInspired[`E${i}`] =  push_('')
+                                workbook3.Sheets.Output_GetInspired[`F${i}`] =  push_('')
+                            }
+                        }
+                    }
+                    // console.log(d)
+                    workbook3.Sheets.Output_GetInspired['!ref'] = 'A1:H10000'
+                    workbook3.Sheets.Output_GetInspired['!merges'] = [{
+                        s: {c: 0, r: 0},
+                        e: {c: 7, r: 1}
+                    }]
+                    workbook3.Sheets.Output_GetInspired['!cols'] = [{wpx: 185},{wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}, {wpx: 185}]
+                    workbook3.Sheets.Output_GetInspired.A1 = {
+                        v: 'GetInspired GetInspired – Output Excel',
+                        t: 's',
+                        s: {
+                            font: {
+                                sz: 18
+                            },
+                            alignment: {
+                                horizontal: 'left'
+                            }
+                        }
+                    }
+                    workbook3.Sheets.Output_GetInspired.A3 = {
+                        v: 'SMN',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook3.Sheets.Output_GetInspired.B3 = {
+                        v: 'UMN',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook3.Sheets.Output_GetInspired.C3 = {
+                        v: 'GetInspired GetInspired ID (XML)',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook3.Sheets.Output_GetInspired.D3 = {
+                        v: 'DAM IDs (Manual)',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '404040'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook3.Sheets.Output_GetInspired.E3 = {
+                            v: 'vedio?',
+                            t: 's',
+                            s: {
+                                border: borderAll,
+                                alignment: {
+                                    horizontal: 'center'
+                                },
+                                fill:{
+                                    fgColor: {
+                                            rgb: '98a91f'  
+                                    }
+                                },
+                                font: {
+                                    color: {
+                                        rgb: 'ffffff'  //字体颜色
+                                    }
+                                }
+                            }
+                        }
+                    workbook3.Sheets.Output_GetInspired.F3 = {
+                        v: 'Image File Names',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '98a91f'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook3.Sheets.Output_GetInspired.G3 = {
+                        v: 'Video URL ',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '98a91f'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook3.Sheets.Output_GetInspired.H3 = {
+                        v: 'Video Asset ID',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '0070c0'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    workbook3.Sheets.Output_GetInspired.I3 = {
+                        v: 'Image Asset ID ',
+                        t: 's',
+                        s: {
+                            border: borderAll,
+                            alignment: {
+                                horizontal: 'center'
+                            },
+                            fill:{
+                                fgColor: {
+                                        rgb: '0070c0'  
+                                }
+                            },
+                            font: {
+                                color: {
+                                    rgb: 'ffffff'  //字体颜色
+                                }
+                            }
+                        }
+                    }
+                    // console.log(workbook3)
+                    const workbook3Out = XLSX.write(workbook3, {
+                        bookType: 'xlsx',
+                        bookSST: false,
+                        type: 'binary'
+                    });
+
+                    saveAs(new Blob([s2ab(workbook3Out)], {
+                        type: 'application/octet-stream'
+                    }), 'Output_GetInspired.xlsx')
+                }
+            }
+        })
+        const borderAll = {  //单元格外侧框线
+            top: {
+                style: 'thin'
+            },
+            bottom: {
+                style: 'thin'
+            },
+            left: {
+                style: 'thin'
+            },
+            right: {
+                style: 'thin'
+            }
+        };
+        function push_json(data){
+            return {
+                v: data,
+                t: 's',
+                s: {
+                    border: borderAll
+                }
+            }
+        }
+        function push_(data){
+            return {
+                v: data,
+                t: 's'
+            }
+        }
+    </script>
+</body>
+</html>
